@@ -1,0 +1,14 @@
+1. Qual a principal diferença entre REST e SOAP?
+REST é um estilo arquitetural para construir APIs em torno de recursos e do protocolo HTTP. SOAP é um protocolo formal de troca de mensagens, normalmente baseado em XML, com regras e contratos mais rígidos.
+
+2. Em quais cenários SOAP ainda é amplamente utilizado?
+SOAP ainda aparece muito em integrações corporativas mais antigas, sistemas bancários, seguradoras, órgãos públicos e ERPs, principalmente quando a empresa exige contrato formal, padronização forte de segurança e suporte a transações complexas.
+
+3. Quais são as vantagens e desvantagens de usar REST ao invés de SOAP?
+REST costuma ser mais simples, leve e fácil de consumir, além de funcionar muito bem com aplicações web e mobile. Em compensação, ele não traz nativamente alguns padrões corporativos que o ecossistema SOAP oferece, então parte da padronização de segurança, contratos e interoperabilidade precisa ser definida pela própria equipe.
+
+4. O que é WS-Security e como ele se compara à segurança em APIs REST?
+WS-Security é um padrão do mundo SOAP para proteger mensagens com assinatura digital, criptografia e uso de tokens dentro do envelope XML. Em APIs REST, a segurança normalmente fica apoiada em HTTPS, autenticação por token, JWT e OAuth2. SOAP com WS-Security tende a ser mais padronizado para ambientes corporativos, enquanto REST costuma ser mais simples e flexível.
+
+5. Explique o modelo de maturidade de Richardson e em que nível SOAP se encaixa.
+O modelo de Richardson mede o quanto uma API aproveita os princípios REST. O nível 0 usa HTTP apenas como transporte. O nível 1 separa recursos por URI. O nível 2 usa corretamente verbos HTTP e códigos de status. O nível 3 adiciona HATEOAS, com links para navegação entre recursos. SOAP não foi criado para seguir esse modelo e normalmente fica mais próximo do nível 0, porque em geral trata o HTTP só como meio de transporte para mensagens.

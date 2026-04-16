@@ -1,11 +1,17 @@
 package br.ifsp.contacts.controller;
 
+import br.ifsp.contacts.dto.AddressResponseDTO;
+import br.ifsp.contacts.dto.ContactRequestDTO;
 import br.ifsp.contacts.dto.ContactResponseDTO;
 import br.ifsp.contacts.exception.ResourceNotFoundException;
-import br.ifsp.contacts.model.Address;
 import br.ifsp.contacts.model.Contact;
 import br.ifsp.contacts.repository.AddressRepository;
 import br.ifsp.contacts.repository.ContactRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -21,11 +27,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @RestController
 @RequestMapping("/api/contacts")
+@Tag(name = "Contatos", description = "Endpoints para gerenciamento de contatos")
 public class ContactController {
 
     @Autowired
@@ -35,65 +39,101 @@ public class ContactController {
     private AddressRepository addressRepository;
 
     @GetMapping
+    @Operation(summary = "Listar todos os contatos", description = "Retorna uma lista paginada de todos os contatos. Use os parâmetros page, size e sort para controlar a paginação e ordenação.")
     public Page<ContactResponseDTO> getAllContacts(Pageable pageable) {
         return contactRepository.findAll(pageable)
                 .map(ContactResponseDTO::new);
     }
 
     @GetMapping("/{id}")
-    public ContactResponseDTO getContactId(@PathVariable Long id) {
+    @Operation(summary = "Buscar contato por ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Contato encontrado"),
+        @ApiResponse(responseCode = "404", description = "Contato não encontrado")
+    })
+    public ContactResponseDTO getContactId(
+            @Parameter(description = "ID do contato") @PathVariable Long id) {
         Contact contact = contactRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contato com ID: " + id + " nao encontrado"));
         return new ContactResponseDTO(contact);
     }
 
     @PostMapping
-    public ContactResponseDTO createContact(@Valid @RequestBody Contact contact) {
+    @Operation(summary = "Criar novo contato")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Contato criado com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
+    public ContactResponseDTO createContact(@Valid @RequestBody ContactRequestDTO dto) {
+        Contact contact = new Contact(dto.getNome(), dto.getTelefone(), dto.getEmail());
         Contact savedContact = contactRepository.save(contact);
         return new ContactResponseDTO(savedContact);
     }
 
     @PutMapping("/{id}")
-    public ContactResponseDTO updateContact(@PathVariable Long id, @Valid @RequestBody Contact updateContact) {
+    @Operation(summary = "Atualizar contato completo")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Contato atualizado com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+        @ApiResponse(responseCode = "404", description = "Contato não encontrado")
+    })
+    public ContactResponseDTO updateContact(
+            @Parameter(description = "ID do contato") @PathVariable Long id,
+            @Valid @RequestBody ContactRequestDTO dto) {
         Contact existingContact = contactRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contato com ID: " + id + " nao encontrado"));
 
-        existingContact.setNome(updateContact.getNome());
-        existingContact.setTelefone(updateContact.getTelefone());
-        existingContact.setEmail(updateContact.getEmail());
+        existingContact.setNome(dto.getNome());
+        existingContact.setTelefone(dto.getTelefone());
+        existingContact.setEmail(dto.getEmail());
 
         Contact savedContact = contactRepository.save(existingContact);
         return new ContactResponseDTO(savedContact);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteContact(@PathVariable Long id) {
+    @Operation(summary = "Deletar contato")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Contato deletado com sucesso"),
+        @ApiResponse(responseCode = "404", description = "Contato não encontrado")
+    })
+    public void deleteContact(
+            @Parameter(description = "ID do contato") @PathVariable Long id) {
         Contact existingContact = contactRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Nao foi possivel deletar contato ID: " + id + ". Contato nao encontrado"));
-
         contactRepository.delete(existingContact);
     }
 
     @GetMapping("/search")
-    public Page<ContactResponseDTO> getContactByName(@RequestParam("name")String nome, Pageable pageable){
+    @Operation(summary = "Buscar contatos por nome", description = "Busca paginada de contatos pelo nome (case-insensitive). Use os parâmetros page, size e sort para controlar a paginação e ordenação.")
+    public Page<ContactResponseDTO> getContactByName(
+            @Parameter(description = "Nome para busca") @RequestParam("name") String nome,
+            Pageable pageable) {
         return contactRepository.findByNomeContainingIgnoreCase(nome, pageable)
                 .map(ContactResponseDTO::new);
     }
 
     @PatchMapping("/{id}")
-    public ContactResponseDTO patchUpdateContact(@PathVariable Long id, @RequestBody Contact partialContact) {
+    @Operation(summary = "Atualização parcial do contato", description = "Atualiza apenas os campos informados no corpo da requisição")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Contato atualizado com sucesso"),
+        @ApiResponse(responseCode = "404", description = "Contato não encontrado")
+    })
+    public ContactResponseDTO patchUpdateContact(
+            @Parameter(description = "ID do contato") @PathVariable Long id,
+            @RequestBody ContactRequestDTO dto) {
         Contact existingContact = contactRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contato com ID: " + id + " nao encontrado"));
 
-        if (partialContact.getNome() != null && !partialContact.getNome().isBlank()) {
-            existingContact.setNome(partialContact.getNome());
+        if (dto.getNome() != null && !dto.getNome().trim().isEmpty()) {
+            existingContact.setNome(dto.getNome());
         }
-        if (partialContact.getTelefone() != null && !partialContact.getTelefone().isBlank()) {
-            existingContact.setTelefone(partialContact.getTelefone());
+        if (dto.getTelefone() != null && !dto.getTelefone().trim().isEmpty()) {
+            existingContact.setTelefone(dto.getTelefone());
         }
-        if (partialContact.getEmail() != null && !partialContact.getEmail().isBlank()) {
-            existingContact.setEmail(partialContact.getEmail());
+        if (dto.getEmail() != null && !dto.getEmail().trim().isEmpty()) {
+            existingContact.setEmail(dto.getEmail());
         }
 
         Contact savedContact = contactRepository.save(existingContact);
@@ -101,10 +141,18 @@ public class ContactController {
     }
 
     @GetMapping("/{id}/addresses")
-    public List<Address> getAddressesByContact(@PathVariable Long id) {
+    @Operation(summary = "Listar endereços de um contato", description = "Retorna lista paginada de endereços do contato. Use os parâmetros page, size e sort para controlar a paginação e ordenação.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Endereços encontrados"),
+        @ApiResponse(responseCode = "404", description = "Contato não encontrado")
+    })
+    public Page<AddressResponseDTO> getAddressesByContact(
+            @Parameter(description = "ID do contato") @PathVariable Long id,
+            Pageable pageable) {
         if (!contactRepository.existsById(id)) {
             throw new ResourceNotFoundException("Contato com ID: " + id + " nao encontrado");
         }
-        return addressRepository.findByContact_Id(id);
+        return addressRepository.findByContact_Id(id, pageable)
+                .map(AddressResponseDTO::new);
     }
 }

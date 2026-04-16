@@ -1,6 +1,7 @@
 package br.ifsp.contacts.controller;
 
 import br.ifsp.contacts.dto.AddressRequest;
+import br.ifsp.contacts.dto.AddressResponseDTO;
 import br.ifsp.contacts.exception.ResourceNotFoundException;
 import br.ifsp.contacts.model.Address;
 import br.ifsp.contacts.model.Contact;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/addresses")
@@ -28,21 +30,24 @@ public class AddressController {
     private ContactRepository contactRepository;
 
     @GetMapping
-    public List<Address> getAllAddresses() {
-        return addressRepository.findAll();
+    public List<AddressResponseDTO> getAllAddress(){
+        return addressRepository.findAll()
+                .stream()
+                .map(AddressResponseDTO::new)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
-    public Address getAddressById(@PathVariable Long id) {
-        return addressRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Endereço não encontrado"));
+    public AddressResponseDTO getAddressById(@PathVariable Long id) {
+       Address address = addressRepository.findById(id)
+               .orElseThrow(()->new ResourceNotFoundException("Endereço não encontrado"));
+       return new AddressResponseDTO(address);
     }
 
     @PostMapping
-    public Address createAddress(@Valid @RequestBody AddressRequest addressRequest) {
+    public AddressResponseDTO createAddress(@Valid @RequestBody AddressRequest addressRequest) {
         Contact contact = contactRepository.findById(addressRequest.getContactId())
-                .orElseThrow(() -> new ResourceNotFoundException("Contato com id: " +addressRequest.getContactId()+ " " +
-                        "não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Contato com id: " + addressRequest.getContactId() + " não encontrado"));
 
         Address address = new Address();
         address.setRua(addressRequest.getRua());
@@ -51,7 +56,7 @@ public class AddressController {
         address.setCep(addressRequest.getCep());
         address.setContact(contact);
 
-        Address saveAddress = addressRepository.save(address);
-        return saveAddress;
+        Address savedAddress = addressRepository.save(address);
+        return new AddressResponseDTO(savedAddress);
     }
 }

@@ -8,6 +8,8 @@ import br.ifsp.contacts.repository.AddressRepository;
 import br.ifsp.contacts.repository.ContactRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -33,10 +35,9 @@ public class ContactController {
     private AddressRepository addressRepository;
 
     @GetMapping
-    public List<ContactResponseDTO> getAllContacts() {
-        return contactRepository.findAll().stream()
-                .map(ContactResponseDTO::new)
-                .collect(Collectors.toList());
+    public Page<ContactResponseDTO> getAllContacts(Pageable pageable) {
+        return contactRepository.findAll(pageable)
+                .map(ContactResponseDTO::new);
     }
 
     @GetMapping("/{id}")
@@ -75,15 +76,9 @@ public class ContactController {
     }
 
     @GetMapping("/search")
-    public List<ContactResponseDTO> getContactByName(@RequestParam("name") String nome) {
-        List<Contact> contacts = contactRepository.findByNomeContainingIgnoreCase(nome);
-        if (contacts.isEmpty()) {
-            throw new ResourceNotFoundException("Nenhum contato encontrado com o nome: " + nome);
-        }
-
-        return contacts.stream()
-                .map(ContactResponseDTO::new)
-                .collect(Collectors.toList());
+    public Page<ContactResponseDTO> getContactByName(@RequestParam("name")String nome, Pageable pageable){
+        return contactRepository.findByNomeContainingIgnoreCase(nome, pageable)
+                .map(ContactResponseDTO::new);
     }
 
     @PatchMapping("/{id}")

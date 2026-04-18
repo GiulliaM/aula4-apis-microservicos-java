@@ -18,9 +18,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -82,5 +84,47 @@ public class AddressController {
 
         Address savedAddress = addressRepository.save(address);
         return new AddressResponseDTO(savedAddress);
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Atualizar endereço completo")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Endereço atualizado com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+        @ApiResponse(responseCode = "404", description = "Endereço ou contato não encontrado")
+    })
+    public AddressResponseDTO updateAddress(
+            @Parameter(description = "ID do endereço") @PathVariable Long id,
+            @Valid @RequestBody AddressRequest addressRequest) {
+        log.info("PUT /api/addresses/{}", id);
+        Address address = addressRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Endereço com ID: " + id + " não encontrado"));
+
+        Contact contact = contactRepository.findById(addressRequest.getContactId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Contato com id: " + addressRequest.getContactId() + " não encontrado"));
+
+        address.setRua(addressRequest.getRua());
+        address.setCidade(addressRequest.getCidade());
+        address.setEstado(addressRequest.getEstado());
+        address.setCep(addressRequest.getCep());
+        address.setContact(contact);
+
+        return new AddressResponseDTO(addressRepository.save(address));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Deletar endereço")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Endereço deletado com sucesso"),
+        @ApiResponse(responseCode = "404", description = "Endereço não encontrado")
+    })
+    public void deleteAddress(
+            @Parameter(description = "ID do endereço") @PathVariable Long id) {
+        log.info("DELETE /api/addresses/{}", id);
+        Address address = addressRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Endereço com ID: " + id + " não encontrado"));
+        addressRepository.delete(address);
     }
 }

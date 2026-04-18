@@ -13,6 +13,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +34,8 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Contatos", description = "Endpoints para gerenciamento de contatos")
 public class ContactController {
 
+    private static final Logger log = LoggerFactory.getLogger(ContactController.class);
+
     @Autowired
     private ContactRepository contactRepository;
 
@@ -41,6 +45,7 @@ public class ContactController {
     @GetMapping
     @Operation(summary = "Listar todos os contatos", description = "Retorna uma lista paginada de todos os contatos. Use os parâmetros page, size e sort para controlar a paginação e ordenação.")
     public Page<ContactResponseDTO> getAllContacts(Pageable pageable) {
+        log.info("GET /api/contacts - page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
         return contactRepository.findAll(pageable)
                 .map(ContactResponseDTO::new);
     }
@@ -53,6 +58,7 @@ public class ContactController {
     })
     public ContactResponseDTO getContactId(
             @Parameter(description = "ID do contato") @PathVariable Long id) {
+        log.info("GET /api/contacts/{}", id);
         Contact contact = contactRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contato com ID: " + id + " nao encontrado"));
         return new ContactResponseDTO(contact);
@@ -65,6 +71,7 @@ public class ContactController {
         @ApiResponse(responseCode = "400", description = "Dados inválidos")
     })
     public ContactResponseDTO createContact(@Valid @RequestBody ContactRequestDTO dto) {
+        log.info("POST /api/contacts - nome={}", dto.getNome());
         Contact contact = new Contact(dto.getNome(), dto.getTelefone(), dto.getEmail());
         Contact savedContact = contactRepository.save(contact);
         return new ContactResponseDTO(savedContact);
@@ -80,6 +87,7 @@ public class ContactController {
     public ContactResponseDTO updateContact(
             @Parameter(description = "ID do contato") @PathVariable Long id,
             @Valid @RequestBody ContactRequestDTO dto) {
+        log.info("PUT /api/contacts/{}", id);
         Contact existingContact = contactRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contato com ID: " + id + " nao encontrado"));
 
@@ -99,6 +107,7 @@ public class ContactController {
     })
     public void deleteContact(
             @Parameter(description = "ID do contato") @PathVariable Long id) {
+        log.info("DELETE /api/contacts/{}", id);
         Contact existingContact = contactRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Nao foi possivel deletar contato ID: " + id + ". Contato nao encontrado"));
@@ -110,6 +119,7 @@ public class ContactController {
     public Page<ContactResponseDTO> getContactByName(
             @Parameter(description = "Nome para busca") @RequestParam("name") String nome,
             Pageable pageable) {
+        log.info("GET /api/contacts/search - name={}, page={}, size={}", nome, pageable.getPageNumber(), pageable.getPageSize());
         return contactRepository.findByNomeContainingIgnoreCase(nome, pageable)
                 .map(ContactResponseDTO::new);
     }
@@ -123,6 +133,7 @@ public class ContactController {
     public ContactResponseDTO patchUpdateContact(
             @Parameter(description = "ID do contato") @PathVariable Long id,
             @RequestBody ContactRequestDTO dto) {
+        log.info("PATCH /api/contacts/{}", id);
         Contact existingContact = contactRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contato com ID: " + id + " nao encontrado"));
 
@@ -149,6 +160,7 @@ public class ContactController {
     public Page<AddressResponseDTO> getAddressesByContact(
             @Parameter(description = "ID do contato") @PathVariable Long id,
             Pageable pageable) {
+        log.info("GET /api/contacts/{}/addresses - page={}, size={}", id, pageable.getPageNumber(), pageable.getPageSize());
         if (!contactRepository.existsById(id)) {
             throw new ResourceNotFoundException("Contato com ID: " + id + " nao encontrado");
         }

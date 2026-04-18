@@ -9,7 +9,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 * e indica que esta classe que vai iniciar a aplicação*/
 
 @SpringBootApplication
-public class ContactsApiApplication {
+public class
+ContactsApiApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(ContactsApiApplication.class, args);
